@@ -1,0 +1,45 @@
+
+import React from 'react';
+import Icon from './Icon';
+
+interface ModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+  children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+}
+
+const Modal: React.FC<ModalProps> = ({ isOpen, onClose, title, children, size = 'md' }) => {
+  if (!isOpen) return null;
+
+  const sizeClasses = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 transition-opacity duration-300">
+      <div className={`relative w-full p-4 mx-4 bg-white rounded-lg shadow-xl transform transition-all duration-300 ${sizeClasses[size]}`}>
+        <div className="flex items-start justify-between pb-4 border-b rounded-t">
+          <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
+          <button
+            type="button"
+            className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center"
+            onClick={onClose}
+          >
+            <Icon name="x" className="w-5 h-5" />
+            <span className="sr-only">Close modal</span>
+          </button>
+        </div>
+        <div className="py-6 space-y-6 max-h-[70vh] overflow-y-auto">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Modal;
