@@ -16,6 +16,22 @@ import JournalManager from './components/JournalManager';
 import Login from './components/Login';
 import Modal from './components/common/Modal';
 import Icon from './components/common/Icon';
+import {
+  normalizeCategory,
+  normalizeCustomer,
+  normalizeExpense,
+  normalizeManualJournalEntry,
+  normalizePayable,
+  normalizeProduct,
+  normalizeReceivable,
+  normalizeSavedOrder,
+  normalizeSupplier,
+  normalizeTransaction,
+  toDbProduct,
+  toDbReceivable,
+  toDbSavedOrder,
+  toDbTransaction,
+} from './dbMappers';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -49,39 +65,39 @@ function App() {
     setIsLoading(true);
     try {
         const { data: prodData } = await supabase.from('products').select('*');
-        if (prodData && prodData.length > 0) setProducts(prodData);
+        if (prodData && prodData.length > 0) setProducts(prodData.map(normalizeProduct));
         else setProducts(initialProducts); // Fallback to sample data if DB is empty
 
         const { data: custData } = await supabase.from('customers').select('*');
-        if (custData && custData.length > 0) setCustomers(custData);
+        if (custData && custData.length > 0) setCustomers(custData.map(normalizeCustomer));
         else setCustomers(initialCustomers); // Fallback to sample data
 
         const { data: supData } = await supabase.from('suppliers').select('*');
-        if (supData && supData.length > 0) setSuppliers(supData);
+        if (supData && supData.length > 0) setSuppliers(supData.map(normalizeSupplier));
         else setSuppliers(initialSuppliers); // Fallback to sample data
 
         const { data: catData } = await supabase.from('categories').select('*');
-        if (catData && catData.length > 0) setCategories(catData);
+        if (catData && catData.length > 0) setCategories(catData.map(normalizeCategory));
         else setCategories(initialCategories); // Fallback to sample data
 
         // Fetch transactions sorted by newest
-        const { data: txnData } = await supabase.from('transactions').select('*').order('createdAt', { ascending: false });
-        if (txnData) setTransactions(txnData);
+        const { data: txnData } = await supabase.from('transactions').select('*').order('created_at', { ascending: false });
+        if (txnData) setTransactions(txnData.map(normalizeTransaction));
 
         const { data: recData } = await supabase.from('receivables').select('*');
-        if (recData) setReceivables(recData);
+        if (recData) setReceivables(recData.map(normalizeReceivable));
 
         const { data: payData } = await supabase.from('payables').select('*');
-        if (payData) setPayables(payData);
+        if (payData) setPayables(payData.map(normalizePayable));
 
         const { data: expData } = await supabase.from('expenses').select('*');
-        if (expData) setExpenses(expData);
+        if (expData) setExpenses(expData.map(normalizeExpense));
         
         const { data: savedData } = await supabase.from('saved_orders').select('*');
-        if (savedData) setSavedOrders(savedData);
+        if (savedData) setSavedOrders(savedData.map(normalizeSavedOrder));
 
         const { data: jourData } = await supabase.from('manual_journal_entries').select('*');
-        if (jourData) setManualJournalEntries(jourData);
+        if (jourData) setManualJournalEntries(jourData.map(normalizeManualJournalEntry));
 
     } catch (error) {
         console.error("Error fetching data:", error);
@@ -131,15 +147,7 @@ function App() {
         // FIX: We exclude 'subtotal' and 'discount' from the payload sent to Supabase
         // because the database schema likely doesn't have these columns yet.
         // The 'total' field already contains the final discounted price, so financial reports remain correct.
-        const dbPayload = {
-            id: transaction.id,
-            items: transaction.items,
-            total: transaction.total,
-            totalHPP: transaction.totalHPP,
-            paymentMethod: transaction.paymentMethod,
-            customerId: transaction.customerId,
-            createdAt: transaction.createdAt
-        };
+        const dbPayload = toDbTransaction(transaction);
 
         const { error: txnError } = await supabase.from('transactions').insert([dbPayload]);
         if (txnError) throw txnError;
@@ -176,7 +184,7 @@ function App() {
                 newReceivable.payments.push(downPaymentRecord);
             }
             
-            const { error: recError } = await supabase.from('receivables').insert([newReceivable]);
+            const { error: recError } = await supabase.from('receivables').insert([toDbReceivable(newReceivable)]);
             if (recError) throw recError;
         }
 
@@ -192,7 +200,7 @@ function App() {
   };
 
   const handleSaveOrder = async (order: SavedOrder) => {
-      const { error } = await supabase.from('saved_orders').insert([order]);
+      const { error } = await supabase.from('saved_orders').insert([toDbSavedOrder(order)]);
       if (!error) fetchAllData();
       else alert("Gagal menyimpan pesanan.");
   };
@@ -201,7 +209,7 @@ function App() {
   const handleAddProduct = async (product: Product) => {
       try {
           setIsLoading(true);
-          const { error } = await supabase.from('products').insert([product]);
+          const { error } = await supabase.from('products').insert([toDbProduct(product)]);
           if (error) throw error;
           await fetchAllData();
       } catch (err: any) {
@@ -235,7 +243,7 @@ function App() {
 
         // 2. Delete Receivable (if exists)
         if (transaction.paymentMethod === 'Pay Later') {
-            await supabase.from('receivables').delete().eq('transactionId', transactionId);
+            await supabase.from('receivables').delete().eq('transaction_id', transactionId);
         }
 
         // 3. If Edit, move to Saved Orders
@@ -246,7 +254,7 @@ function App() {
                 cart: transaction.items,
                 createdAt: new Date().toISOString()
             };
-            await supabase.from('saved_orders').insert([savedOrder]);
+            await supabase.from('saved_orders').insert([toDbSavedOrder(savedOrder)]);
         }
 
         // 4. Delete Transaction

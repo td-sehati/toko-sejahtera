@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Transaction, Expense, Product, Customer, Receivable, Payable, ManualJournalEntry } from '../types';
 import Modal from './common/Modal';
 import Icon from './common/Icon';
+import { toLocalDateInputValue } from '../dateUtils';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 
@@ -26,8 +27,8 @@ const ReportCard: React.FC<{ title: string; value: string; colorClass: string }>
 const ReportManager: React.FC<ReportManagerProps> = ({ transactions, expenses, products, customers, receivables, payables, manualEntries, onVoidTransaction }) => {
     const HISTORY_ROWS_PER_PAGE = 10;
     const today = new Date();
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
-    const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).toISOString().slice(0, 10);
+    const firstDayOfMonth = toLocalDateInputValue(new Date(today.getFullYear(), today.getMonth(), 1));
+    const lastDayOfMonth = toLocalDateInputValue(new Date(today.getFullYear(), today.getMonth() + 1, 0));
 
     const [startDate, setStartDate] = useState(firstDayOfMonth);
     const [endDate, setEndDate] = useState(lastDayOfMonth);

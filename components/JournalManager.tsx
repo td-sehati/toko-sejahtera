@@ -4,6 +4,8 @@ import { Transaction, Expense, Receivable, Payable, ManualJournalEntry } from '.
 import { supabase } from '../supabaseClient';
 import Icon from './common/Icon';
 import Modal from './common/Modal';
+import { toDbManualJournalEntry } from '../dbMappers';
+import { toLocalDateInputValue } from '../dateUtils';
 
 interface JournalManagerProps {
   transactions: Transaction[];
@@ -29,13 +31,13 @@ const formatDate = (dateStr: string) => new Date(dateStr).toLocaleString('id-ID'
 
 const JournalManager: React.FC<JournalManagerProps> = ({ transactions, expenses, receivables, payables, manualEntries, onRefresh }) => {
     const [isModalOpen, setModalOpen] = useState(false);
-    const [startDate, setStartDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10));
-    const [endDate, setEndDate] = useState(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10));
+    const [startDate, setStartDate] = useState(toLocalDateInputValue(new Date(new Date().getFullYear(), new Date().getMonth(), 1)));
+    const [endDate, setEndDate] = useState(toLocalDateInputValue(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)));
     const [filterType, setFilterType] = useState<'All' | 'Masuk' | 'Keluar'>('All');
 
     // Manual Entry Form State
     const [manualForm, setManualForm] = useState<Partial<ManualJournalEntry>>({
-        date: new Date().toISOString().slice(0, 10),
+        date: toLocalDateInputValue(new Date()),
         type: 'Masuk',
         category: 'Modal Awal'
     });
@@ -148,12 +150,12 @@ const JournalManager: React.FC<JournalManagerProps> = ({ transactions, expenses,
             category: manualForm.category as any,
         };
         
-        const { error } = await supabase.from('manual_journal_entries').insert([newEntry]);
+        const { error } = await supabase.from('manual_journal_entries').insert([toDbManualJournalEntry(newEntry)]);
         if (!error) {
             onRefresh();
             setModalOpen(false);
             setManualForm({
-                date: new Date().toISOString().slice(0, 10),
+                date: toLocalDateInputValue(new Date()),
                 type: 'Masuk',
                 category: 'Modal Awal',
                 description: '',

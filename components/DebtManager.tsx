@@ -4,6 +4,7 @@ import { Receivable, Payable, Customer, Supplier, PaymentRecord, PayablePaymentR
 import { supabase } from '../supabaseClient';
 import Modal from './common/Modal';
 import Icon from './common/Icon';
+import { toDbPayable, toDbReceivable } from '../dbMappers';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('id-ID');
@@ -265,7 +266,7 @@ const DebtManager: React.FC<DebtManagerProps> = ({ receivables, payables, custom
 
                 const { error } = await supabase
                     .from('receivables')
-                    .update({ paidAmount: newPaidAmount, payments: newPayments })
+                    .update(toDbReceivable({ ...selectedDebt, paidAmount: newPaidAmount, payments: newPayments }))
                     .eq('id', selectedDebt.id);
                 
                 if (error) throw error;
@@ -283,7 +284,7 @@ const DebtManager: React.FC<DebtManagerProps> = ({ receivables, payables, custom
 
                 const { error } = await supabase
                     .from('payables')
-                    .update({ paidAmount: newPaidAmount, payments: newPayments })
+                    .update(toDbPayable({ ...selectedDebt, paidAmount: newPaidAmount, payments: newPayments }))
                     .eq('id', selectedDebt.id);
 
                 if (error) throw error;

@@ -1,15 +1,37 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
-// Read Supabase configuration from Vite environment variables.
-// Create a local `.env` (not committed) with the keys from your Supabase project,
-// for example copy `.env.example` to `.env` and fill the values.
-// Vite exposes variables that start with `VITE_` via `import.meta.env`.
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL as string;
-const supabaseKey = (import.meta as any).env?.VITE_SUPABASE_ANON_KEY as string;
+const missingEnvError = new Error(
+  'Supabase belum dikonfigurasi. Salin `.env.example` ke `.env` lalu isi VITE_SUPABASE_URL dan VITE_SUPABASE_ANON_KEY.'
+);
 
-if (!supabaseUrl || !supabaseKey) {
-	// Warn in dev when env vars are not set. In production, set secrets in your host.
-	console.warn('VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY is not set. Check your .env file.');
+const createOfflineQuery = () => {
+  const chain = {
+    select: () => chain,
+    insert: () => Promise.resolve({ data: null, error: missingEnvError }),
+    update: () => chain,
+    delete: () => chain,
+    order: () => Promise.resolve({ data: null, error: null }),
+    eq: () => Promise.resolve({ data: null, error: missingEnvError }),
+    then: (onFulfilled?: (value: { data: null; error: null }) => unknown, onRejected?: (reason: unknown) => unknown) =>
+      Promise.resolve({ data: null, error: null }).then(onFulfilled, onRejected),
+  };
+
+  return chain;
+};
+
+const createOfflineClient = () =>
+  ({
+    from: () => createOfflineQuery(),
+  }) as unknown as SupabaseClient;
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const hasSupabaseEnv = Boolean(supabaseUrl && supabaseKey);
+
+if (!hasSupabaseEnv) {
+  console.warn(missingEnvError.message);
 }
 
-export const supabase = createClient(supabaseUrl || '', supabaseKey || '');
+export const supabase = hasSupabaseEnv
+  ? createClient(supabaseUrl as string, supabaseKey as string)
+  : createOfflineClient();

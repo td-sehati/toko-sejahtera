@@ -4,6 +4,7 @@ import { Category } from '../types';
 import { supabase } from '../supabaseClient';
 import Modal from './common/Modal';
 import Icon from './common/Icon';
+import { toDbCategory } from '../dbMappers';
 
 interface CategoryManagerProps {
   categories: Category[];
@@ -43,7 +44,7 @@ const CategoryManager: React.FC<CategoryManagerProps> = ({ categories, onRefresh
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
 
   const handleSave = async (category: Category) => {
-      const { error } = await supabase.from('categories').upsert(category);
+      const { error } = await supabase.from('categories').upsert(toDbCategory(category));
       if (!error) {
           onRefresh();
           setModalOpen(false);

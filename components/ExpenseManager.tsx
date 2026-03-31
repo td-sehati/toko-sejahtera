@@ -4,6 +4,7 @@ import { Expense } from '../types';
 import { supabase } from '../supabaseClient';
 import Modal from './common/Modal';
 import Icon from './common/Icon';
+import { toDbExpense } from '../dbMappers';
 
 const formatCurrency = (amount: number) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(amount);
 const formatDate = (dateStr: string) => new Date(dateStr).toLocaleDateString('id-ID');
@@ -71,7 +72,7 @@ const ExpenseManager: React.FC<{
     const [selectedExpense, setSelectedExpense] = useState<Expense | null>(null);
     
     const handleSave = async (expense: Expense) => {
-        const { error } = await supabase.from('expenses').upsert(expense);
+        const { error } = await supabase.from('expenses').upsert(toDbExpense(expense));
         if (!error) {
             onRefresh();
             setModalOpen(false);

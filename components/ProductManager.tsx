@@ -4,6 +4,7 @@ import { Product, Supplier, Payable, Category } from '../types';
 import { supabase } from '../supabaseClient';
 import Modal from './common/Modal';
 import Icon from './common/Icon';
+import { toDbPayable, toDbProduct } from '../dbMappers';
 
 interface ProductManagerProps {
   products: Product[];
@@ -215,7 +216,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ products, suppliers, se
     setIsSubmitting(true);
     try {
         // Upsert to Supabase
-        const { error } = await supabase.from('products').upsert(product);
+        const { error } = await supabase.from('products').upsert(toDbProduct(product));
         if (error) throw error;
         
         onRefresh();
@@ -277,7 +278,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ products, suppliers, se
                 createdAt: new Date().toISOString(),
                 payments: [],
             };
-            await supabase.from('payables').insert([newPayable]);
+            await supabase.from('payables').insert([toDbPayable(newPayable)]);
         }
         
         onRefresh();
@@ -426,7 +427,7 @@ const ProductManager: React.FC<ProductManagerProps> = ({ products, suppliers, se
         }
 
         if (successCount > 0) {
-            const { error } = await supabase.from('products').insert(newProducts);
+            const { error } = await supabase.from('products').insert(newProducts.map(toDbProduct));
             if (error) alert("Gagal import batch.");
             else {
                 alert(`Berhasil mengimpor ${successCount} produk.`);

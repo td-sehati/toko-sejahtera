@@ -4,6 +4,7 @@ import { Customer, Supplier } from '../types';
 import { supabase } from '../supabaseClient';
 import Modal from './common/Modal';
 import Icon from './common/Icon';
+import { toDbCustomer, toDbSupplier } from '../dbMappers';
 
 interface CrmManagerProps {
   customers: Customer[];
@@ -60,7 +61,7 @@ const CrmManager: React.FC<CrmManagerProps> = ({ customers, suppliers, onRefresh
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSaveCustomer = async (customer: Customer) => {
-      const { error } = await supabase.from('customers').upsert(customer);
+      const { error } = await supabase.from('customers').upsert(toDbCustomer(customer));
       if (!error) {
           onRefresh();
           setModalOpen(false);
@@ -70,7 +71,7 @@ const CrmManager: React.FC<CrmManagerProps> = ({ customers, suppliers, onRefresh
   };
   
   const handleSaveSupplier = async (supplier: Supplier) => {
-      const { error } = await supabase.from('suppliers').upsert(supplier);
+      const { error } = await supabase.from('suppliers').upsert(toDbSupplier(supplier));
       if (!error) {
           onRefresh();
           setModalOpen(false);
@@ -229,7 +230,9 @@ const CrmManager: React.FC<CrmManagerProps> = ({ customers, suppliers, onRefresh
 
           if (successCount > 0) {
               const table = activeTab === 'customers' ? 'customers' : 'suppliers';
-              const { error } = await supabase.from(table).insert(newItems);
+              const { error } = await supabase.from(table).insert(
+                activeTab === 'customers' ? newItems.map(toDbCustomer) : newItems.map(toDbSupplier)
+              );
               
               if (!error) {
                   alert(`Berhasil mengimpor ${successCount} data ${label}.`);
